@@ -2,7 +2,7 @@
 
 Build spt3g_software linked to Julia's own Python, Boost, GSL, FFTW, FLAC, HDF5, and NetCDF binary libraries. 
 
-This removes the need to install any of these libraries by-hand, and produces an spt3g_software package which is binary-compatible with Julia. 
+This removes the need to install any of these libraries by-hand, and also produces an spt3g_software package which is binary-compatible with Julia and its libraries. 
 
 ## Requirements
 
@@ -10,10 +10,11 @@ The only requirements on the system are:
 
 * Julia
 * C++ compilers
+* Make and CMake
 
 The following are _not_ needed. Its fine to have them, but if you have system versions of them, they will not be used:
 
-* CMake, Python, Boost, GSL, FFTW, FLAC, HDF5, and NetCDF
+* Python, Boost, GSL, FFTW, FLAC, HDF5, and NetCDF
 
 ## Usage
 
@@ -22,10 +23,6 @@ The following set of commands should build a fully working spt3g_software and al
 ```bash
 # (if you don't already have this in your bashrc)
 export JULIA_PROJECT=@.
-
-# these definitions needed just during this build for brevity
-alias cmake='julia -e "using Spt3G; Spt3G.cmake()" --'
-alias python='julia -e "using Spt3G; Spt3G.python()" --'
 
 # make empty folder which will serve as the Julia and Poetry environments
 mkdir temp && cd temp
@@ -37,6 +34,9 @@ mkdir spt3g_software/build && pushd spt3g_software/build
 cmake ..
 make # [-j <nprocs>]
 
+# define here for brevity, not needed after install
+alias python='julia -e "using Spt3G; Spt3G.python()" --'
+
 # set up a Python virtual environment to install the built spt3g_software into
 # (any other venv-compatible thing would work too)
 popd
@@ -47,7 +47,7 @@ python -m poetry env use $(julia -e "using Spt3G; print(Spt3G.Python_jll.python_
 python -m poetry add -e spt3g_software/build
 
 # build PyCall linked to the Python in the virtual environment
-poetry run julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.build("PyCall")
+python -m poetry run julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.build("PyCall")
 ```
 
 Now run `julia --startup-file=no` and you should be able to do:
@@ -65,7 +65,12 @@ julia> py"""
 
 ## Notes
 
-Right now just the spt3g_software install_improvements branch works
-but after I merge that, any other commit should work.
+* The Python executable in the virtual environment won't work when called from the command line (e.g. `poetry run python` won't work, only loading Python from Julia works), but you can fix it by running this once from the environment folder:
 
-The Dockerfile in this repo is a demonstration of everything working.
+  ```bash
+  echo "export LD_LIBRARY_PATH=\"\$(julia --project=$(pwd) -e \"using Python_jll; print(Python_jll.LIBPATH[])\"):\$LD_LIBRARY_PATH\"" >> $(poetry env info --path)/bin/activate
+  ```
+
+* Right now you need the spt3g_software `install_improvements` branch but hopefully this can get merged then any later spt3g_software commit will be fine.
+
+* The Dockerfile in this repo is a demonstration of everything working if curious. 

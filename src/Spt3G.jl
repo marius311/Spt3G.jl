@@ -2,7 +2,6 @@ module Spt3G
 
 using boost_jll
 using boostpython_jll
-using CMake_jll
 using FFTW_jll
 using FLAC_jll
 using GSL_jll
@@ -20,14 +19,10 @@ function __init__()
 end
 
 
-function cmake()
-    cmake_flags = ["-D$(k)=$(v)" for (k, v) in cmake_flags_dict()]
-    run(`$(CMake_jll.cmake()) $(cmake_flags) $(ARGS)`)
-end
-
 function python()
     run(`$(Python_jll.python()) $(ARGS)`)
 end
+
 
 function cmake_flags_dict()
 

@@ -5,6 +5,7 @@ RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         build-essential \
         ca-certificates \
+        cmake \
         curl \
         g++-8 \
         pax-utils \
@@ -31,7 +32,7 @@ COPY --chown=1000:1000 src $HOME/src
 RUN julia -e "using Pkg; Pkg.instantiate()"
 RUN mkdir $HOME/spt3g_software/build
 WORKDIR $HOME/spt3g_software/build
-RUN julia -e "using Spt3G; Spt3G.cmake()" ..
+RUN cmake $(julia -e "using Spt3G; print(Spt3G.cmake_flags())") ..
 RUN make -j 8
 
 # only now install system python
