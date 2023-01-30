@@ -31,7 +31,7 @@ julia -e 'using Pkg; Pkg.activate("."); Pkg.add(url="https://github.com/marius31
 # clone and build spt3g_software
 git clone https://github.com/SouthPoleTelescope/spt3g_software.git -b install_improvements
 mkdir spt3g_software/build && pushd spt3g_software/build
-cmake ..
+cmake $(julia -e "using Spt3G; print(Spt3G.cmake_flags())") ..
 make # [-j <nprocs>]
 
 # define here for brevity, not needed after install
