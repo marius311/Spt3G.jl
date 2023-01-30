@@ -1,6 +1,33 @@
-module Spt3GSoftwareBuilder
+module Spt3G
 
-using Python_jll, boost_jll, boostpython_jll, GSL_jll, FFTW_jll, NetCDF_jll, HDF5_jll, FLAC_jll
+using boost_jll
+using boostpython_jll
+using CMake_jll
+using FFTW_jll
+using FLAC_jll
+using GSL_jll
+using HDF5_jll
+using NetCDF_jll
+using Python_jll
+
+
+function __init__()
+    # has no effect in the current process, but makes it so spawned
+    # subprocesses (like the kind used by PyCall when
+    # PYCALL_JL_RUNTIME_PYTHON is set) will find Python shared
+    # libraries
+    ENV["LD_LIBRARY_PATH"] = Python_jll.LIBPATH[] * ":" * ENV["LD_LIBRARY_PATH"]
+end
+
+
+function cmake()
+    cmake_flags = ["-D$(k)=$(v)" for (k, v) in cmake_flags_dict()]
+    run(`$(CMake_jll.cmake()) $(cmake_flags) $(ARGS)`)
+end
+
+function python()
+    run(`$(Python_jll.python()) $(ARGS)`)
+end
 
 function cmake_flags_dict()
 
