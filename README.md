@@ -47,9 +47,7 @@ python -m poetry env use $(julia -e "using Spt3G; print(Spt3G.Python_jll.python_
 python -m poetry add -e spt3g_software/build
 
 # build PyCall linked to the Python in the virtual environment
-LD_LIBRARY_PATH=$(julia -e "using Spt3G; print(Spt3G.Python_jll.LIBPATH[])") \
-    PYTHON=$(python -m poetry run which python) \
-    julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.build("PyCall")'
+poetry run julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.build("PyCall")
 ```
 
 Now run `julia --startup-file=no` and you should be able to do:

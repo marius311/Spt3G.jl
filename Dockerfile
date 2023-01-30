@@ -55,10 +55,6 @@ RUN poetry add -e spt3g_software/build
 RUN echo "export LD_LIBRARY_PATH=\"\$(julia --project=$HOME -e \"using Python_jll; print(Python_jll.LIBPATH[])\"):\$LD_LIBRARY_PATH\"" >> $(poetry env info --path)/bin/activate
 
 # add/build PyCall with this environment's Python
-RUN LD_LIBRARY_PATH="$(julia --project=$HOME -e 'using Python_jll; print(Python_jll.LIBPATH[])'):$LD_LIBRARY_PATH" \
-        PYTHON=$(poetry run which python) \
-        julia -e 'using Pkg; Pkg.add("PyCall")'
-
-# COPY python $HOME/python
+RUN poetry run julia -e 'using Pkg, Spt3G; Pkg.add("PyCall")'
 
 ENTRYPOINT ["poetry", "run", "julia"]

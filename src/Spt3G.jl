@@ -16,7 +16,7 @@ function __init__()
     # subprocesses (like the kind used by PyCall when
     # PYCALL_JL_RUNTIME_PYTHON is set) will find Python shared
     # libraries
-    ENV["LD_LIBRARY_PATH"] = Python_jll.LIBPATH[] * ":" * ENV["LD_LIBRARY_PATH"]
+    ENV["LD_LIBRARY_PATH"] = Python_jll.LIBPATH[] * ":" * get(ENV, "LD_LIBRARY_PATH", "")
 end
 
 
