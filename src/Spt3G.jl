@@ -23,6 +23,9 @@ function python()
     run(`$(Python_jll.python()) $(ARGS)`)
 end
 
+function cmake_flags()
+    join(["-D$(k)=$(v)" for (k, v) in pairs(cmake_flags_dict())], " ")
+end
 
 function cmake_flags_dict()
 
@@ -35,13 +38,20 @@ function cmake_flags_dict()
     end
 
     Dict(
+        
+        # CONFIG-mode find_package may find user-compiled
+        # *config.cmake files in any of a number of places (e.g.
+        # $HOME/lib would be standard for Boost), so use MODULE-mode
+        # instead, which respects the manual paths we specify below
+        # always pointing to JLLs
+        :CMAKE_FIND_PACKAGE_PREFER_CONFIG => "FALSE",
 
         :Python_EXECUTABLE     => Python_jll.python_path,
 
         :BOOST_ROOT            => boost_jll.artifact_dir,        
         :BOOST_INCLUDEDIR      => joinpath(boost_jll.artifact_dir,  "include"),
         :BOOST_LIBRARYDIR      => joinpath(boost_jll.artifact_dir,  "lib"),
-        :Boost_NO_SYSTEM_PATHS => "ON",
+        :Boost_PYTHON_TYPE     => "python38",
         
         :GSL_INCLUDES          => joinpath(GSL_jll.artifact_dir,    "include"),
         :GSL_LIB               => joinpath(GSL_jll.artifact_dir,    "lib/libgsl.so"),
@@ -61,6 +71,14 @@ function cmake_flags_dict()
         :FLAC_INCLUDE_DIR      => joinpath(FLAC_jll.artifact_dir,   "include"),
         :FLAC_LIBRARIES        => joinpath(FLAC_jll.artifact_dir,   "lib/libFLAC.so"),
 
+        # cmake only knows about the "top-level" dependencies listed
+        # above. while compiling, _their_ shared-library dependencies
+        # wouldn't be found, so we encode the entire tree of JLL-based
+        # dependencies in the RPATH, and tell cmake to build with this
+        # RPATH. at (Julia) runtime, this doesn't matter since
+        # Spt3G.jl will load everything correctly first, so this is
+        # just needed at compile-time. however, it does also make the
+        # build usable from Python, which is convenient.
         :CMAKE_BUILD_WITH_INSTALL_RPATH => "TRUE",
         :CMAKE_INSTALL_RPATH => "'\$ORIGIN:$(join(Set(vcat(
             boost_jll.LIBPATH_list, 
@@ -72,12 +90,6 @@ function cmake_flags_dict()
         ), ";"))'"        
     )
 
-end
-
-function cmake_flags()
-    join(map(collect(pairs(cmake_flags_dict()))) do (k, v)
-        "-D$(k)=$(v)"
-    end, " ")
 end
 
 end
