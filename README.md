@@ -65,7 +65,7 @@ julia> py"""
 
 ## Notes
 
-* The Python executable in the virtual environment won't work when called from the command line (e.g. `poetry run python` won't work, only loading Python from Julia works), but you can fix it by running this once from the environment folder:
+* The Python in the virtual environment is fully working when called from Julia, but can hit some link errors if called from the command line with certain packages (e.g. `poetry run python -c "import ctypes"` won't work), but you can fix it by running this once from the environment folder:
 
   ```bash
   echo "export LD_LIBRARY_PATH=\"\$(julia --project=$(pwd) -e \"using Python_jll; print(Python_jll.LIBPATH[])\"):\$LD_LIBRARY_PATH\"" >> $(poetry env info --path)/bin/activate
