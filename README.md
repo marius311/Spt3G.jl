@@ -21,7 +21,7 @@ The following are _not_ needed. Its fine to have them, but if you have system ve
 The following set of commands should build a fully working spt3g_software and allow you to call it from Julia via PyCall:
 
 ```bash
-# (if you don't already have this in your bashrc)
+# recommend having this in your bashrc, but if you dont:
 export JULIA_PROJECT=@.
 
 # make empty folder which will serve as the Julia and Poetry environments
