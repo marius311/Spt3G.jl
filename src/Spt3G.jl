@@ -72,10 +72,10 @@ function cmake_flags_dict()
         :FLAC_LIBRARIES        => joinpath(FLAC_jll.artifact_dir,   "lib/libFLAC.so"),
 
         # cmake only knows about the "top-level" dependencies listed
-        # above. while compiling, _their_ shared-library dependencies
-        # wouldn't be found, so we encode the entire tree of JLL-based
-        # dependencies in the RPATH, and tell cmake to build with this
-        # RPATH. at (Julia) runtime, this doesn't matter since
+        # above. while compiling, transitive dependencies (deps of
+        # deps) wouldn't be found, so we encode the entire tree of
+        # JLL-based dependencies in the RPATH, and tell cmake to build
+        # with this RPATH. this doesn't matter at Julia runtime, since
         # Spt3G.jl will load everything correctly first, so this is
         # just needed at compile-time. however, it does also make the
         # build usable from Python, which is convenient.
@@ -87,7 +87,15 @@ function cmake_flags_dict()
             NetCDF_jll.LIBPATH_list, 
             HDF5_jll.LIBPATH_list, 
             FLAC_jll.LIBPATH_list)
-        ), ";"))'"        
+        ), ";"))'",
+
+        # this links with RPATH instead of RUNPATH, only the former
+        # which also handles transitive dependencies (although this
+        # seems buggy, but this is not needed for the Julia
+        # functionality, at least it makes it more likely to also work
+        # directly from Python)
+        :CMAKE_SHARED_LINKER_FLAGS => "-Wl,--disable-new-dtags"
+
     )
 
 end
