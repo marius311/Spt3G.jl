@@ -40,11 +40,11 @@ using Python_jll
 # subprocesses (e.g. the one spawned by Pkg.build("PyCall"))
 
 function __init__()
-    ENV["PYTHON"] = Python_jll.python_path
     try
-        ENV["PYCALL_JL_RUNTIME_PYTHON"] = joinpath(read(Cmd(`poetry env info -qp`, dir=dirname(Base.active_project())), String), "bin/python")
+        ENV["PYCALL_JL_RUNTIME_PYTHON"] = _PYCALL_JL_RUNTIME_PYTHON()
     catch
     end
+    ENV["PYTHON"] = Python_jll.python_path
     ENV["LD_LIBRARY_PATH"] = Python_jll.LIBPATH[] * ":" * get(ENV, "LD_LIBRARY_PATH", "")
 end
 
@@ -55,15 +55,25 @@ function install_dot_env_file()
     else
         open(joinpath(projdir, ".env"), "w") do io
             println(io, "PYTHON=", Python_jll.python_path)
-            println(io, "PYCALL_JL_RUNTIME_PYTHON=", strip(read(Cmd(`poetry run which python`, dir=dirname(Base.active_project())), String)))
+            PYCALL_JL_RUNTIME_PYTHON = try
+                _PYCALL_JL_RUNTIME_PYTHON()
+            catch
+                " # there was an error calling `poetry env info`, something is probably broken"
+            end
+            println(io, "PYCALL_JL_RUNTIME_PYTHON=", PYCALL_JL_RUNTIME_PYTHON)
             println(io, "LD_LIBRARY_PATH=", join(libpath(),":"), raw":${LD_LIBRARY_PATH}")
         end
     end
 end
 
+function _PYCALL_JL_RUNTIME_PYTHON()
+    projdir = dirname(Base.active_project())
+    cmd = pipeline(addenv(Cmd(`poetry env info -p`, dir=projdir), "PYTHONHOME" => nothing), stderr=devnull)
+    return joinpath(strip(read(cmd, String)), "bin/python")
+end
 
 function python()
-    run(`$(Python_jll.python()) $(ARGS)`)
+    run(addenv(`$(Python_jll.python()) $(ARGS)`, "SSL_CERT_DIR" => get(ENV, "SSL_CERT_DIR", "/etc/ssl/certs")))
 end
 
 function cmake_flags()
@@ -141,6 +151,7 @@ end
 function libpath()
     Set(vcat(
         Python_jll.LIBPATH_list,
+        [joinpath(Python_jll.artifact_dir, "lib/python3.8/lib-dynload")],
         boost_jll.LIBPATH_list, 
         GSL_jll.LIBPATH_list, 
         FFTW_jll.LIBPATH_list, 
