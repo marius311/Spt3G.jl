@@ -45,17 +45,17 @@ RUN apt-get update \
         patchelf \
     && rm -rf /var/lib/apt/lists/*
 USER $USER
-RUN pip install poetry
 ENV PATH=$HOME/.local/bin:$PATH
+RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN poetry self add poetry-dotenv-plugin
 
 # make poetry environment where we simulate adding spt3g_software
 WORKDIR $HOME
 RUN poetry init -n --python ^3.8
-RUN poetry env use $(julia -e "using Python_jll; print(Python_jll.python_path)")
+RUN poetry env use $(julia -e "using Spt3G; print(Spt3G.Python_jll.python_path)")
 RUN poetry add -e spt3g_software/build
-RUN echo "export LD_LIBRARY_PATH=\"\$(julia --project=$HOME -e \"using Python_jll; print(Python_jll.LIBPATH[])\"):\$LD_LIBRARY_PATH\"" >> $(poetry env info --path)/bin/activate
+RUN poetry run julia -e 'using Spt3G; Spt3G.install_dot_env_file()'
+RUN poetry run julia -e 'using Pkg; Pkg.add("PyCall")'
 
-# add/build PyCall with this environment's Python
-RUN poetry run julia -e 'using Pkg, Spt3G; Pkg.add("PyCall")'
 
 ENTRYPOINT ["poetry", "run", "julia"]

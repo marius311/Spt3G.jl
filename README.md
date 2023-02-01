@@ -32,22 +32,26 @@ julia -e 'using Pkg; Pkg.activate("."); Pkg.add(url="https://github.com/marius31
 git clone https://github.com/SouthPoleTelescope/spt3g_software.git -b install_improvements
 mkdir spt3g_software/build && pushd spt3g_software/build
 cmake $(julia -e "using Spt3G; print(Spt3G.cmake_flags())") ..
-make # [-j <nprocs>]
+make -j 8 # or however many processors you want
 
-# define here for brevity, not needed after install
-alias python='julia -e "using Spt3G; Spt3G.python()" --'
+# if you already have a Python and poetry you can skip these steps
+# (the virtual environment will use Python via the Julia package regardless)
+alias python="julia --startup-file=no --project=$(pwd) -e \"using Spt3G; Spt3G.python()\" --"
+alias poetry="python -m poetry"
+python -m ensurepip
+python -m pip install poetry
+
+# need this plugin 
+poetry self add poetry-dotenv-plugin
 
 # set up a Python virtual environment to install the built spt3g_software into
 # (any other venv-compatible thing would work too)
 popd
-python -m ensurepip
-python -m pip install poetry
-python -m poetry init -n --python ^3.8
-python -m poetry env use $(julia -e "using Spt3G; print(Spt3G.Python_jll.python_path)")
-python -m poetry add -e spt3g_software/build
-
-# build PyCall linked to the Python in the virtual environment
-python -m poetry run julia -e 'using Pkg, Spt3G; Pkg.add("PyCall"); Pkg.build("PyCall")'
+poetry init -n --python ^3.8
+poetry env use $(julia -e "using Spt3G; print(Spt3G.Python_jll.python_path)")
+poetry add -e spt3g_software/build
+poetry run julia -e 'using Spt3G; Spt3G.install_dot_env_file()'
+poetry run julia -e 'using Pkg; Pkg.add("PyCall")'
 ```
 
 Now run `julia --startup-file=no` and you should be able to do:
@@ -60,7 +64,7 @@ julia> py"""
        """
 ```
 
-(you can remove the `--startup-file=no`, but if it errors when you do, check your startup file, you always need to load `Spt3G` _first_ in any session).
+(you can remove the `--startup-file=no`, but if it errors when you do, check your startup file for culprits, note you always need to load `Spt3G` _first_ in any session).
 
 
 ## Notes

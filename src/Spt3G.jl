@@ -10,12 +10,55 @@ using NetCDF_jll
 using Python_jll
 
 
+# We set three relevant variables:
+# 
+#  * PYTHON: the path to the Python executable used by
+#    Pkg.build("PyCall")
+#  * PYCALL_JL_RUNTIME_PYTHON: the path to the Python executable used
+#    by PyCall at runtime (can be different from the PYTHON it got
+#    built with but it must link to the same libpython.so)
+#  * LD_LIBRARY_PATH: shared library search paths for linking
+# 
+# None of these are actually needed if all we care about is calling
+# spt3g_software from Julia (the main use case for this package).
+# That's handled by the much more robust linking that Julia does when
+# we load the JLLs above. 
+# 
+# But setting these here is still nice because it makes
+# Pkg.build("PyCall") work without having to set any environment
+# variables by hand, and it also allows spt3g_software to be used from
+# Python without Julia at all. 
+# 
+# Variables are set by writing them to a .env file which is sourced
+# (thanks to the poetry dotenv plugin) whenever we activate the
+# environment, and Julia runtime in __init__. This is redundant if we
+# run Julia with the environment active, but e.g. Jupyter kernels
+# don't do that, so it's still useful in both places. 
+# 
+# Note setting LD_LIBRARY_PATH in __init__ will have no effect on the
+# already-running process, but will have an effect on any spawned
+# subprocesses (e.g. the one spawned by Pkg.build("PyCall"))
+
 function __init__()
-    # has no effect in the current process, but makes it so spawned
-    # subprocesses (like the kind used by PyCall when
-    # PYCALL_JL_RUNTIME_PYTHON is set) will find Python shared
-    # libraries
+    ENV["PYTHON"] = Python_jll.python_path
+    try
+        ENV["PYCALL_JL_RUNTIME_PYTHON"] = read(Cmd(`poetry -q run which python`, dir=dirname(Base.active_project())), String)
+    catch
+    end
     ENV["LD_LIBRARY_PATH"] = Python_jll.LIBPATH[] * ":" * get(ENV, "LD_LIBRARY_PATH", "")
+end
+
+function install_dot_env_file()
+    projdir = dirname(Base.active_project())
+    if any(occursin(path, projdir) for path in DEPOT_PATH)
+        error("install_dot_env_file() should be called from a project environment, not the global one")
+    else
+        open(joinpath(projdir, ".env"), "w") do io
+            println(io, "PYTHON=", Python_jll.python_path)
+            println(io, "PYCALL_JL_RUNTIME_PYTHON=", strip(read(Cmd(`poetry run which python`, dir=dirname(Base.active_project())), String)))
+            println(io, "LD_LIBRARY_PATH=", join(libpath(),":"), raw":${LD_LIBRARY_PATH}")
+        end
+    end
 end
 
 
@@ -76,28 +119,36 @@ function cmake_flags_dict()
         # deps) wouldn't be found, so we encode the entire tree of
         # JLL-based dependencies in the RPATH, and tell cmake to build
         # with this RPATH. this doesn't matter at Julia runtime, since
-        # Spt3G.jl will load everything correctly first, so this is
+        # the JLLs will load everything correctly first, so this is
         # just needed at compile-time. however, it does also make the
         # build usable from Python, which is convenient.
         :CMAKE_BUILD_WITH_INSTALL_RPATH => "TRUE",
-        :CMAKE_INSTALL_RPATH => "'\$ORIGIN:$(join(Set(vcat(
-            boost_jll.LIBPATH_list, 
-            GSL_jll.LIBPATH_list, 
-            FFTW_jll.LIBPATH_list, 
-            NetCDF_jll.LIBPATH_list, 
-            HDF5_jll.LIBPATH_list, 
-            FLAC_jll.LIBPATH_list)
-        ), ";"))'",
+        :CMAKE_INSTALL_RPATH => "'\$ORIGIN:$(join(libpath(), ";"))'",
 
-        # this links with RPATH instead of RUNPATH, only the former
-        # which also handles transitive dependencies (although this
-        # seems buggy, but this is not needed for the Julia
-        # functionality, at least it makes it more likely to also work
-        # directly from Python)
+        # this links with RPATH instead of RUNPATH. only RPATH also
+        # handles transitive dependencies (this seems buggy in testing
+        # tbh, but this is not needed for the Julia functionality, but
+        # at least it makes it more likely to also work directly from
+        # Python)
         :CMAKE_SHARED_LINKER_FLAGS => "-Wl,--disable-new-dtags"
 
     )
 
 end
+
+# this is every .julia/artifacts/<hash>/lib directory of every JLL we
+# need and for all of their transitive dependencies
+function libpath()
+    Set(vcat(
+        Python_jll.LIBPATH_list,
+        boost_jll.LIBPATH_list, 
+        GSL_jll.LIBPATH_list, 
+        FFTW_jll.LIBPATH_list, 
+        NetCDF_jll.LIBPATH_list, 
+        HDF5_jll.LIBPATH_list, 
+        FLAC_jll.LIBPATH_list
+    ))
+end
+
 
 end
