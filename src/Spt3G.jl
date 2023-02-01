@@ -42,7 +42,7 @@ using Python_jll
 function __init__()
     ENV["PYTHON"] = Python_jll.python_path
     try
-        ENV["PYCALL_JL_RUNTIME_PYTHON"] = read(Cmd(`poetry -q run which python`, dir=dirname(Base.active_project())), String)
+        ENV["PYCALL_JL_RUNTIME_PYTHON"] = joinpath(read(Cmd(`poetry env info -qp`, dir=dirname(Base.active_project())), String), "bin/python")
     catch
     end
     ENV["LD_LIBRARY_PATH"] = Python_jll.LIBPATH[] * ":" * get(ENV, "LD_LIBRARY_PATH", "")

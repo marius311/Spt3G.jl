@@ -26,12 +26,12 @@ export JULIA_PROJECT=@.
 
 # make empty folder which will serve as the Julia and Poetry environments
 mkdir temp && cd temp
-julia -e 'using Pkg; Pkg.activate("."); Pkg.add(url="https://github.com/marius311/Spt3G.jl")'
+julia --startup-file=no --project=. -e 'using Pkg; Pkg.add(url="https://github.com/marius311/Spt3G.jl")'
 
 # clone and build spt3g_software
 git clone https://github.com/SouthPoleTelescope/spt3g_software.git -b install_improvements
 mkdir spt3g_software/build && pushd spt3g_software/build
-cmake $(julia -e "using Spt3G; print(Spt3G.cmake_flags())") ..
+cmake $(julia --startup-file=no -e "using Spt3G; print(Spt3G.cmake_flags())") ..
 make -j 8 # or however many processors you want
 
 # if you already have a Python and poetry you can skip these steps
