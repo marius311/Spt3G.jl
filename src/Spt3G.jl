@@ -58,7 +58,7 @@ function install_dot_env_file()
             PYCALL_JL_RUNTIME_PYTHON = try
                 _PYCALL_JL_RUNTIME_PYTHON()
             catch
-                " # there was an error calling `poetry env info`, something is probably broken"
+                " # error calling `poetry env info`, run `julia -e 'using Spt3G; Spt3G._PYCALL_JL_RUNTIME_PYTHON(stderr)'` to see the error"
             end
             println(io, "PYCALL_JL_RUNTIME_PYTHON=", PYCALL_JL_RUNTIME_PYTHON)
             println(io, "LD_LIBRARY_PATH=", join(libpath(),":"), raw":${LD_LIBRARY_PATH}")
@@ -66,9 +66,11 @@ function install_dot_env_file()
     end
 end
 
-function _PYCALL_JL_RUNTIME_PYTHON()
+function _PYCALL_JL_RUNTIME_PYTHON(stderr=devnull)
     projdir = dirname(Base.active_project())
-    cmd = pipeline(addenv(Cmd(`poetry env info -p`, dir=projdir), "PYTHONHOME" => nothing), stderr=devnull)
+    # remove everything we've added since `poetry` below is outside the virtual environment
+    LD_LIBRARY_PATH = replace(get(ENV, "LD_LIBRARY_PATH", ""), [p => "" for p in libpath()]...)
+    cmd = pipeline(addenv(Cmd(`poetry env info -p`, dir=projdir), "PYTHONHOME" => nothing, "LD_LIBRARY_PATH" => LD_LIBRARY_PATH); stderr)
     return joinpath(strip(read(cmd, String)), "bin/python")
 end
 
