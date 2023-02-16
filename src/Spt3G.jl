@@ -82,7 +82,7 @@ function cmake_flags()
     join(["-D$(k)=$(v)" for (k, v) in pairs(cmake_flags_dict())], " ")
 end
 
-function cmake_flags_dict()
+function cmake_flags_dict(prefer_no_cray_wrappers=true)
 
     # Julia has a separate boostpython_jll package for Boost python
     # bindings, but cmake can only take a single boost lib
@@ -92,7 +92,7 @@ function cmake_flags_dict()
         symlink(joinpath(boostpython_jll.artifact_dir,  "lib/libboost_python38.so"), libboost_python)
     end
 
-    Dict(
+    flags = Dict(
         
         # CONFIG-mode find_package may find user-compiled
         # *config.cmake files in any of a number of places (e.g.
@@ -145,6 +145,20 @@ function cmake_flags_dict()
         :CMAKE_SHARED_LINKER_FLAGS => "-Wl,--disable-new-dtags"
 
     )
+
+    # on Cray systems, the default compilers would be Cray wrappers of
+    # GNU compilers but these add extra libraries which we dont need
+    # and which are more brittle, so instead use the GNU compilers directly
+    if prefer_no_cray_wrappers
+        if get(ENV, "CC", "") == "" && success(run(pipeline(`which gcc`, stderr=devnull, stdout=devnull), wait=false))
+            flags[:CMAKE_C_COMPILER] = "gcc"
+        end
+        if get(ENV, "CXX", "") == "" && success(run(pipeline(`which g++`, stderr=devnull, stdout=devnull), wait=false))
+            flags[:CMAKE_CXX_COMPILER] = "g++"
+        end
+    end
+
+    flags
 
 end
 
