@@ -10,13 +10,14 @@ using NetCDF_jll
 using Python_jll
 
 
-# We set three relevant variables:
+# We set these relevant variables:
 # 
 #  * PYTHON: the path to the Python executable used by
 #    Pkg.build("PyCall")
-#  * PYCALL_JL_RUNTIME_PYTHON: the path to the Python executable used
-#    by PyCall at runtime (can be different from the PYTHON it got
-#    built with but it must link to the same libpython.so)
+#  * PYCALL_JL_RUNTIME_PYTHON/JULIA_PYTHONCALL_EXE: the path to the
+#    Python executable used by PyCall/PythonCall at runtime (even for
+#    Pycall can be different from the PYTHON it got built with but it
+#    must link to the same libpython.so, which ours does)
 #  * LD_LIBRARY_PATH: shared library search paths for linking
 # 
 # None of these are actually needed if all we care about is calling
@@ -41,9 +42,10 @@ using Python_jll
 
 function __init__()
     try
-        ENV["PYCALL_JL_RUNTIME_PYTHON"] = _PYCALL_JL_RUNTIME_PYTHON()
+        ENV["PYCALL_JL_RUNTIME_PYTHON"] = ENV["JULIA_PYTHONCALL_EXE"] = poetry_python_executable()
     catch
     end
+    ENV["JULIA_CONDAPKG_BACKEND"] = "Null"
     ENV["PYTHON"] = Python_jll.python_path
     ENV["LD_LIBRARY_PATH"] = Python_jll.LIBPATH[] * ":" * get(ENV, "LD_LIBRARY_PATH", "")
 end
@@ -55,18 +57,20 @@ function install_dot_env_file()
     else
         open(joinpath(projdir, ".env"), "w") do io
             println(io, "PYTHON=", Python_jll.python_path)
-            PYCALL_JL_RUNTIME_PYTHON = try
-                _PYCALL_JL_RUNTIME_PYTHON()
+            _poetry_python_executable = try
+                poetry_python_executable()
             catch
-                " # error calling `poetry env info`, run `julia -e 'using Spt3G; Spt3G._PYCALL_JL_RUNTIME_PYTHON(stderr)'` to see the error"
+                " # error calling `poetry env info`, run `julia -e 'using Spt3G; Spt3G.poetry_python_executable(stderr)'` to see the error"
             end
-            println(io, "PYCALL_JL_RUNTIME_PYTHON=", PYCALL_JL_RUNTIME_PYTHON)
+            println(io, "JULIA_PYTHONCALL_EXE=", _poetry_python_executable)
+            println(io, "PYCALL_JL_RUNTIME_PYTHON=", _poetry_python_executable)
             println(io, "LD_LIBRARY_PATH=", join(libpath(),":"), raw":${LD_LIBRARY_PATH}")
+            println(io, "JULIA_CONDAPKG_BACKEND=", "Null")
         end
     end
 end
 
-function _PYCALL_JL_RUNTIME_PYTHON(stderr=devnull)
+function poetry_python_executable(stderr=devnull)
     projdir = dirname(Base.active_project())
     # remove everything we've added since `poetry` below is outside the virtual environment
     LD_LIBRARY_PATH = replace(get(ENV, "LD_LIBRARY_PATH", ""), [p => "" for p in libpath()]...)
