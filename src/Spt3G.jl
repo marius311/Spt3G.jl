@@ -111,6 +111,9 @@ function cmake_flags_dict(prefer_no_cray_wrappers=true)
         :BOOST_INCLUDEDIR      => joinpath(boost_jll.artifact_dir,  "include"),
         :BOOST_LIBRARYDIR      => joinpath(boost_jll.artifact_dir,  "lib"),
         :Boost_PYTHON_TYPE     => "python38",
+        # Julia's boost_jll package is built without bzip2 support,
+        # spt3g_software has this override in that case:
+        :WITH_BZIP2            => "FALSE",
         
         :GSL_INCLUDES          => joinpath(GSL_jll.artifact_dir,    "include"),
         :GSL_LIB               => joinpath(GSL_jll.artifact_dir,    "lib/libgsl.so"),
