@@ -4,6 +4,7 @@ authors = ["marius <mariusmillea@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+CMake_jll = "3f4e10e2-61f2-5801-8945-23b9d642d0e6"
 FFTW_jll = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 FLAC_jll = "1d38b3a6-207b-531b-80e8-c83f48dafa73"
 GSL_jll = "1b77fbbe-d8ee-58f0-85f9-836ddc23a7a4"
@@ -14,12 +15,13 @@ boost_jll = "28df3c45-c428-5900-9ff8-a3135698ca75"
 boostpython_jll = "398de629-0a17-50a6-9837-8b3a70a53854"
 
 [compat]
+CMake_jll = "=3.24.3"
 FFTW_jll = "=3.3.10"
 FLAC_jll = "=1.4.2"
 GSL_jll = "=2.7.2"
 HDF5_jll = "=1.12.2"
 NetCDF_jll = "=400.902.5"
-Python_jll = "=3.8.8"
-boost_jll = "=1.76.0"
-boostpython_jll = "=1.76.0"
+Python_jll = "=3.10.8"
+boost_jll = "=1.79.0"
+boostpython_jll = "=1.79.0"
 julia = "1.8"

@@ -2,6 +2,7 @@ module Spt3G
 
 using boost_jll
 using boostpython_jll
+using CMake_jll
 using FFTW_jll
 using FLAC_jll
 using GSL_jll
@@ -91,9 +92,9 @@ function cmake_flags_dict(prefer_no_cray_wrappers=true)
     # Julia has a separate boostpython_jll package for Boost python
     # bindings, but cmake can only take a single boost lib
     # directory, so copy it into the main boost_jll directory
-    libboost_python = joinpath(boost_jll.artifact_dir,  "lib/libboost_python38.so")
+    libboost_python = joinpath(boost_jll.artifact_dir,  "lib/libboost_python310.so")
     if !isfile(libboost_python)
-        symlink(joinpath(boostpython_jll.artifact_dir,  "lib/libboost_python38.so"), libboost_python)
+        symlink(joinpath(boostpython_jll.artifact_dir,  "lib/libboost_python310.so"), libboost_python)
     end
 
     flags = Dict(
@@ -110,7 +111,7 @@ function cmake_flags_dict(prefer_no_cray_wrappers=true)
         :BOOST_ROOT            => boost_jll.artifact_dir,        
         :BOOST_INCLUDEDIR      => joinpath(boost_jll.artifact_dir,  "include"),
         :BOOST_LIBRARYDIR      => joinpath(boost_jll.artifact_dir,  "lib"),
-        :Boost_PYTHON_TYPE     => "python38",
+        :Boost_PYTHON_TYPE     => "python310",
         # Julia's boost_jll package is built without bzip2 support,
         # spt3g_software has this override in that case:
         :WITH_BZIP2            => "FALSE",
@@ -149,7 +150,7 @@ function cmake_flags_dict(prefer_no_cray_wrappers=true)
         # tbh, but this is not needed for the Julia functionality, but
         # at least it makes it more likely to also work directly from
         # Python)
-        :CMAKE_SHARED_LINKER_FLAGS => "-Wl,--disable-new-dtags"
+        :CMAKE_SHARED_LINKER_FLAGS => "-Wl,--disable-new-dtags",
 
     )
 
@@ -174,7 +175,7 @@ end
 function libpath()
     Set(vcat(
         Python_jll.LIBPATH_list,
-        [joinpath(Python_jll.artifact_dir, "lib/python3.8/lib-dynload")],
+        [joinpath(Python_jll.artifact_dir, "lib/python3.10/lib-dynload")],
         boost_jll.LIBPATH_list, 
         GSL_jll.LIBPATH_list, 
         FFTW_jll.LIBPATH_list, 
@@ -184,5 +185,9 @@ function libpath()
     ))
 end
 
+
+function cmake()
+    `$(CMake_jll.cmake()) $(["-D$(k)=$(v)" for (k, v) in pairs(cmake_flags_dict())])`
+end
 
 end

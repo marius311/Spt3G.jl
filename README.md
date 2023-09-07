@@ -43,7 +43,7 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.add(url="https://github.c
 # clone and build spt3g_software
 git clone https://github.com/SouthPoleTelescope/spt3g_software.git -b spt3g_jl
 mkdir spt3g_software/build && pushd spt3g_software/build
-cmake $(julia --startup-file=no -e "using Spt3G; print(Spt3G.cmake_flags())") ..
+julia -e 'using Spt3G; run(`$(Spt3G.cmake()) $ARGS`)' -- ../spt3g_software
 make -j 8 # or however many processors you want
 popd
 
